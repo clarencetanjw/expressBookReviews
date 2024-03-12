@@ -52,13 +52,29 @@ public_users.get('/isbn/:isbn', async (req, res) => {
     }
 });
 
+public_users.get('/author/:author', async (req, res) => {
+    try {
+        const { author } = req.params;
+        
+        // Make a GET request using Axios to fetch book details based on author
+        const response = await axios.get(`https://clarencetan9-5000.theiadockernext-0-labs-prod-theiak8s-4-tor01.proxy.cognitiveclass.ai/?author=${author}`);
+
+        // If books are found for the author, return them as a JSON response
+        return res.status(200).json(response.data);
+    } catch (error) {
+        // If an error occurs, return an error response
+        console.error("Error retrieving books by author", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+
 // Get book details based on title (Updated with async-await and Axios)
 public_users.get('/title/:title', async (req, res) => {
     try {
         const { title } = req.params;
         
         // Make a GET request using Axios to fetch book details based on title
-        const response = await axios.get(`http://your-books-api-url?title=${title}`);
+        const response = await axios.get(`https://clarencetan9-5000.theiadockernext-0-labs-prod-theiak8s-4-tor01.proxy.cognitiveclass.ai/?title=${title}`);
 
         // If books are found for the title, return them as a JSON response
         return res.status(200).json(response.data);
