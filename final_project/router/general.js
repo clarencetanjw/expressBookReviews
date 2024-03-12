@@ -3,7 +3,71 @@ let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
+const axios = require('axios');
 
+// Function to get the list of books available in the shop
+async function getBookList() {
+    try {
+        // Make an HTTP GET request to fetch the list of books from the server
+        const response = await axios.get('https://clarencetan9-5000.theiadockernext-0-labs-prod-theiak8s-4-tor01.proxy.cognitiveclass.ai/customer');
+
+        // Return the book list from the response data
+        return response.data;
+    } catch (error) {
+        // Handle any errors that occur during the process
+        console.error("Error retrieving book list:", error);
+        throw new Error("Failed to fetch book list");
+    }
+}
+
+// Route to get the list of books available in the shop
+public_users.get('/', async function (req, res) {
+    try {
+        // Call the getBookList function to fetch the list of books
+        const bookList = await getBookList();
+
+        // Return the book list as a JSON response
+        return res.status(200).json(bookList);
+    } catch (error) {
+        // Handle any errors that occur during the process
+        console.error("Error retrieving book list:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+
+// Get book details based on ISBN (Updated with async-await and Axios)
+public_users.get('/isbn/:isbn', async (req, res) => {
+    try {
+        const { isbn } = req.params;
+        
+        // Make a GET request using Axios to fetch book details based on ISBN
+        const response = await axios.get(`https://clarencetan9-5000.theiadockernext-0-labs-prod-theiak8s-4-tor01.proxy.cognitiveclass.ai/${isbn}`);
+
+        // If the book is found, return its details as a JSON response
+        return res.status(200).json(response.data);
+    } catch (error) {
+        // If an error occurs, return an error response
+        console.error("Error retrieving book details by ISBN", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+
+// Get book details based on title (Updated with async-await and Axios)
+public_users.get('/title/:title', async (req, res) => {
+    try {
+        const { title } = req.params;
+        
+        // Make a GET request using Axios to fetch book details based on title
+        const response = await axios.get(`http://your-books-api-url?title=${title}`);
+
+        // If books are found for the title, return them as a JSON response
+        return res.status(200).json(response.data);
+    } catch (error) {
+        // If an error occurs, return an error response
+        console.error("Error retrieving books by title", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
 
 public_users.post("/register", (req,res) => {
     try {
@@ -143,6 +207,8 @@ public_users.get('/review/:isbn',function (req, res) {
     console.error("Error retrieving Book by Reviews", error);
     return res.status(500).json({Message: "Internal Server Error"});
     }
+
+  
 });
 
 module.exports.general = public_users;

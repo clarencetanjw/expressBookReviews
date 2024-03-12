@@ -2,6 +2,19 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 let books = require("./booksdb.js");
 const regd_users = express.Router();
+const app = express();
+
+// Middleware to log requests
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+  });
+  
+  // Middleware to handle errors
+  app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ message: 'Internal Server Error' });
+  });
 
 let users = [];
 
@@ -32,6 +45,7 @@ const authenticatedUser = (username, password) => {
 //only registered users can login
 regd_users.post("/login", (req,res) => {
     const {username, password} = req.body;
+    const Atoken = jwt.sign({ username }, 'secret key', { expiresIn: '1h' });
 
     // Check if the username and password are provided
     if (!username || !password) {
@@ -56,7 +70,38 @@ regd_users.post("/login", (req,res) => {
 });
 
 // Add a book review
-regd_users.put("/auth/review/:isbn", (req, res) => {
+function verifyToken(req, res, next) {
+    const token = req.headers.authorization?.split(' ')[1]; // Assuming token is sent in the Authorization header
+    if (!token) return res.status(401).json({ message: 'Token not provided' });
+
+    jwt.verify(token, 'secret key', (err, decoded) => {
+        if (err) return res.status(401).json({ message: 'Invalid token' });
+        req.user = decoded;
+        next();
+    });
+}
+
+regd_users.delete("/auth/review/:isbn", verifyToken, (req, res) => {
+    const { isbn } = req.params;
+    const username = req.user.username;
+
+    // Check if the ISBN is valid
+    if (!isbn) {
+        return res.status(400).json({ message: "ISBN is required" });
+    }
+
+    // Check if the user has posted a review for the given ISBN
+    if (!books[isbn].reviews[username]) {
+        return res.status(404).json({ message: "Review not found for the given ISBN and user" });
+    }
+
+    // Delete the review for the given ISBN and user
+    delete books[isbn].reviews[username];
+
+    return res.status(200).json({ message: "Review deleted successfully" });
+});
+
+regd_users.put("/auth/review/:isbn", verifyToken, (req, res) => {
     const {isbn} = req.params;
     const {review} = req.body;
     const username = req.user.username
@@ -64,7 +109,7 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
      // Check if the ISBN is valid
      if (!isbn) {
         return res.status(400).json({Message: "ISBN is required"});
-    
+     }
     // Check if the review is provided
     if (!review) {
         return res.status(400).json({Message: "Review is required"});
